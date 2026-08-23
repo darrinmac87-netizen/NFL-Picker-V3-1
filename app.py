@@ -6,13 +6,14 @@ import math
 import numpy as np
 import pandas as pd
 import streamlit as st
-from pick_history_ui import render_pick_history
+
 
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT / "src"))
 
 from nfl_picker_v3.engine import weekly_predictions
 from nfl_picker_v3.backtest_engine import backtest
+from pick_history_ui import render_pick_history
 
 st.set_page_config(page_title="NFL Picker V3.1", page_icon="🏈", layout="wide")
 st.title("🏈 NFL Picker V3.1")
