@@ -1,0 +1,6 @@
+Tier,Games,Correct,Accuracy,Avg_Probability,Wrong
+PASS,56,27,48.2,52.7,29
+LOW,54,24,44.4,57.4,30
+MEDIUM,73,48,65.8,63.0,25
+STRONG,55,42,76.4,70.8,13
+ELITE,33,26,78.8,79.2,7
