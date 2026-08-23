@@ -6,6 +6,7 @@ import math
 import numpy as np
 import pandas as pd
 import streamlit as st
+from pick_history_ui import render_pick_history
 
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT / "src"))
@@ -17,7 +18,12 @@ st.set_page_config(page_title="NFL Picker V3.1", page_icon="🏈", layout="wide"
 st.title("🏈 NFL Picker V3.1")
 st.caption("Original V3 + optimized production ML model for 2026")
 
-tabs = st.tabs(["2026 Weekly Picks", "Week Backtest", "Season Backtest", "V3.1 Model Results"])
+tabs = st.tabs([
+    "2026 Weekly Picks",
+    "Week Backtest",
+    "Season Backtest",
+    "V3.1 Model Results",
+    "Pick History"])
 
 MODEL_PATH = ROOT / "outputs" / "v31_production_model.json"
 
@@ -237,3 +243,5 @@ with tabs[3]:
             ] if c in holdout.columns
         ]
         st.dataframe(holdout[keep], width="stretch", hide_index=True)
+        with tabs[4]:
+            render_pick_history(root)
