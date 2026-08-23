@@ -13,6 +13,7 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from nfl_picker_v3.engine import weekly_predictions
 from nfl_picker_v3.backtest_engine import backtest
+from nfl_picker_v3.confidence_engine import apply_confidence_engine
 from pick_history_ui import render_pick_history
 
 st.set_page_config(page_title="NFL Picker V3.1", page_icon="🏈", layout="wide")
@@ -102,6 +103,7 @@ with tabs[0]:
                 df["final_pick"] = df["ml_pick"]
                 df["final_probability"] = df["ml_win_probability"]
                 df["agreement"] = np.where(df["v3_pick"] == df["ml_pick"], "YES", "NO")
+                df = apply_confidence_engine(df)
                 df["confidence_level_v31"] = df["ml_win_probability"].map(_confidence)
 
                 display = df[[
@@ -115,6 +117,9 @@ with tabs[0]:
                     "confidence_level_v31",
                     "agreement",
                     "projected_score",
+                    "confidence_score",
+                    "confidence_tier",
+                    "recommended_status",
                 ]].copy()
 
                 display["final_probability"] = (
