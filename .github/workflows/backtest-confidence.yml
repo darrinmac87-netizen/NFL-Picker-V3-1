@@ -1,0 +1,51 @@
+name: Run NFL Picker Confidence Backtest
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  confidence-backtest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run confidence backtest
+        run: |
+          python run_confidence_backtest.py
+
+      - name: Commit confidence reports
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add outputs/confidence_backtest_detail.csv
+          git add outputs/confidence_backtest_tiers.csv
+          git add outputs/confidence_backtest_agreement.csv
+          git add outputs/confidence_backtest_thresholds.csv
+
+          if git diff --cached --quiet; then
+            echo "No confidence report changes."
+            exit 0
+          fi
+
+          git commit -m "Update confidence backtest reports"
+          git pull --rebase origin main
+          git push origin main
