@@ -10,6 +10,7 @@ from nfl_picker_v3.confidence_backtest import save_confidence_backtest
 def find_historical_file():
     candidates = [
         ROOT / "outputs" / "historical_2020_2024_games.csv",
+        ROOT / "outputs" / "v31_2025_holdout_games.csv",
         ROOT / "outputs" / "ml_2025_holdout_games.csv",
     ]
 
@@ -18,8 +19,9 @@ def find_historical_file():
             return path
 
     raise FileNotFoundError(
-        "No historical predictions CSV was found. "
-        "Expected outputs/historical_2020_2024_games.csv "
+        "No historical predictions CSV was found. Expected one of: "
+        "outputs/historical_2020_2024_games.csv, "
+        "outputs/v31_2025_holdout_games.csv, "
         "or outputs/ml_2025_holdout_games.csv."
     )
 
