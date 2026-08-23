@@ -245,4 +245,4 @@ with tabs[3]:
         ]
         st.dataframe(holdout[keep], width="stretch", hide_index=True)
         with tabs[4]:
-            render_pick_history(root)
+            render_pick_history(ROOT)
