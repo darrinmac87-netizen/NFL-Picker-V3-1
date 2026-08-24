@@ -14,6 +14,7 @@ sys.path.insert(0, str(ROOT / "src"))
 from nfl_picker_v3.engine import weekly_predictions
 from nfl_picker_v3.backtest_engine import backtest
 from nfl_picker_v3.confidence_engine import apply_confidence_engine
+from nfl_picker_v3.model_agreement import apply_model_agreement
 from pick_history_ui import render_pick_history
 
 st.set_page_config(page_title="NFL Picker V3.1", page_icon="🏈", layout="wide")
@@ -102,7 +103,8 @@ with tabs[0]:
                 # V3.1 final pick is the optimized production model.
                 df["final_pick"] = df["ml_pick"]
                 df["final_probability"] = df["ml_win_probability"]
-                df["agreement"] = np.where(df["v3_pick"] == df["ml_pick"], "YES", "NO")
+                df = apply_model_agreement(df, original_col="v3_pick",ml_col="ml_pick",)
+                df["agreement"] = np.where(df["models_agree"],"YES","NO",)
                 df = apply_confidence_engine(df)
                 df["confidence_level_v31"] = df["ml_win_probability"].map(_confidence)
 
