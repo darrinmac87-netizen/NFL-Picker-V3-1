@@ -2,7 +2,7 @@ from pathlib import Path
 import sys
 import json
 import math
-
+from nfl_picker_v3.week_completeness import check_week_completeness
 import numpy as np
 import pandas as pd
 import streamlit as st
@@ -79,6 +79,19 @@ with tabs[0]:
     if st.button("Generate V3.1 Picks"):
         try:
             df = weekly_predictions(int(season), int(week))
+
+            check = check_week_completeness(
+                df,
+                season=int(season),
+                week=int(week),
+            )
+
+            if check["complete"] is True:
+                st.success(check["message"])
+            elif check["complete"] is False:
+                st.warning(check["message"])
+            else:
+                st.info(check["message"])  
 
             # Keep original V3 result.
             df["v3_pick"] = df["pick"]
