@@ -2,7 +2,7 @@ from pathlib import Path
 import sys
 import json
 import math
-from nfl_picker_v3.week_completeness import check_week_completeness
+
 import numpy as np
 import pandas as pd
 import streamlit as st
@@ -15,7 +15,7 @@ from nfl_picker_v3.engine import weekly_predictions
 from nfl_picker_v3.backtest_engine import backtest
 from nfl_picker_v3.confidence_engine import apply_confidence_engine
 from nfl_picker_v3.model_agreement import apply_model_agreement
-from pick_history_ui import render_pick_history
+from nfl_picker_v3.week_completeness import check_week_completeness
 
 st.set_page_config(page_title="NFL Picker V3.1", page_icon="🏈", layout="wide")
 st.title("🏈 NFL Picker V3.1")
