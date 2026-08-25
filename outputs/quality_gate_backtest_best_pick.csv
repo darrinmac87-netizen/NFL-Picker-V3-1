@@ -1,2 +1,2 @@
-Quality,Games,Correct,Wrong,Accuracy
-BEST PICK,0,0,0,
+Quality,Games,Correct,Wrong,Accuracy,Status
+BEST PICK,0,0,0,,UNAVAILABLE - historical file lacks independent V3 and ML pick columns

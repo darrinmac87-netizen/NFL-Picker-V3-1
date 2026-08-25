@@ -1,0 +1,7 @@
+Weekly_Top_Cutoff,Games,Correct,Wrong,Accuracy
+Top 1 per week,18,17,1,94.4
+Top 2 per week,36,29,7,80.6
+Top 3 per week,54,41,13,75.9
+Top 5 per week,90,68,22,75.6
+Top 8 per week,144,106,38,73.6
+Top 10 per week,180,124,56,68.9
