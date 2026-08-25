@@ -1,0 +1,6 @@
+Top_Rank_Cutoff,Games,Correct,Wrong,Accuracy
+Top 1,1,1,0,100.0
+Top 3,3,3,0,100.0
+Top 5,5,5,0,100.0
+Top 8,8,8,0,100.0
+Top 10,10,10,0,100.0
