@@ -6,7 +6,7 @@ import math
 import numpy as np
 import pandas as pd
 import streamlit as st
-from nfl_picker_v3.pick_quality_gate import apply_pick_quality_gate
+
 
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT / "src"))
