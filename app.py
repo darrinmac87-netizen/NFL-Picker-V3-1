@@ -16,6 +16,7 @@ from nfl_picker_v3.backtest_engine import backtest
 from nfl_picker_v3.confidence_engine import apply_confidence_engine
 from nfl_picker_v3.model_agreement import apply_model_agreement
 from nfl_picker_v3.week_completeness import check_week_completeness
+from nfl_picker_v3.pick_quality_gate import apply_pick_quality_gate
 from pick_history_ui import render_pick_history
 st.set_page_config(page_title="NFL Picker V3.1", page_icon="🏈", layout="wide")
 st.title("🏈 NFL Picker V3.1")
