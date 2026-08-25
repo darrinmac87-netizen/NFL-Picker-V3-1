@@ -6,7 +6,7 @@ import math
 import numpy as np
 import pandas as pd
 import streamlit as st
-
+from nfl_picker_v3.pick_quality_gate import apply_pick_quality_gate
 
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT / "src"))
@@ -119,6 +119,7 @@ with tabs[0]:
                 df = apply_model_agreement(df, original_col="v3_pick",ml_col="ml_pick",)
                 df["agreement"] = np.where(df["models_agree"],"YES","NO",)
                 df = apply_confidence_engine(df)
+                df = apply_pick_quality_gate(df)
                 df["confidence_level_v31"] = df["ml_win_probability"].map(_confidence)
 
                 display = df[[
@@ -135,6 +136,9 @@ with tabs[0]:
                     "confidence_score",
                     "confidence_tier",
                     "recommended_status",
+                    "pick_quality_score",
+                    "pick_quality",
+                    "pick_priority_rank",
                 ]].copy()
 
                 display["final_probability"] = (
