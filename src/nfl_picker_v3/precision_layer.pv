@@ -1,0 +1,103 @@
+from __future__ import annotations
+
+import pandas as pd
+
+
+def apply_precision_layer(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Conservative post-model precision layer.
+
+    This does NOT replace the V3.1 model.
+    It adds a precision score and recommendation designed to
+    reduce exposure to lower-confidence games.
+    """
+
+    out = df.copy()
+
+    # Safe defaults
+    if "final_win_probability" not in out.columns:
+        if "ml_win_probability" in out.columns:
+            out["final_win_probability"] = out["ml_win_probability"]
+        else:
+            out["final_win_probability"] = 0.50
+
+    if "models_agree" not in out.columns:
+        out["models_agree"] = False
+
+    if "pick_quality_score" not in out.columns:
+        out["pick_quality_score"] = 50.0
+
+    # Convert probability to 0-100 scale if needed
+    prob = out["final_win_probability"].astype(float)
+
+    if prob.max() <= 1.0:
+        prob = prob * 100.0
+
+    agreement_bonus = out["models_agree"].fillna(False).astype(bool).astype(int) * 8.0
+
+    quality_component = (
+        out["pick_quality_score"]
+        .fillna(50.0)
+        .astype(float)
+        .clip(0, 100)
+        * 0.35
+    )
+
+    probability_component = (
+        prob.clip(50, 100) * 0.55
+    )
+
+    out["precision_score"] = (
+        probability_component
+        + quality_component
+        + agreement_bonus
+    ).round(1)
+
+    def precision_label(row):
+        score = float(row["precision_score"])
+        p = float(row["final_win_probability"])
+
+        if p <= 1.0:
+            p *= 100.0
+
+        agree = bool(row["models_agree"])
+
+        if score >= 82 and p >= 68 and agree:
+            return "BEST PICK"
+
+        if score >= 74 and p >= 62:
+            return "PLAY"
+
+        if score >= 66 and p >= 57:
+            return "LEAN"
+
+        return "PASS"
+
+    out["precision_recommendation"] = out.apply(
+        precision_label,
+        axis=1,
+    )
+
+    # Rank strongest games within week if season/week exist
+    rank_group = []
+
+    if "season" in out.columns:
+        rank_group.append("season")
+
+    if "week" in out.columns:
+        rank_group.append("week")
+
+    if rank_group:
+        out["precision_rank"] = (
+            out.groupby(rank_group)["precision_score"]
+            .rank(method="first", ascending=False)
+            .astype(int)
+        )
+    else:
+        out["precision_rank"] = (
+            out["precision_score"]
+            .rank(method="first", ascending=False)
+            .astype(int)
+        )
+
+    return out
