@@ -18,16 +18,16 @@ from nfl_picker_v3.model_agreement import apply_model_agreement
 from nfl_picker_v3.week_completeness import check_week_completeness
 from nfl_picker_v3.pick_quality_gate import apply_pick_quality_gate
 from pick_history_ui import render_pick_history
-st.set_page_config(page_title="NFL Picker V3.1", page_icon="🏈", layout="wide")
-st.title("🏈 NFL Picker V3.1")
-st.caption("Original V3 + optimized production ML model for 2026")
+st.set_page_config(page_title="DDD NFL Picker v4.0", page_icon="🏈", layout="wide")
+st.title("🏈 DDD NFL Picker v4.0 — Validation Upgrade")
+st.caption("Preserves V3.1 production model; adds no-hindsight evaluation, exports, and data-quality checks. New statistical features require retraining.")
 
 tabs = st.tabs([
     "2026 Weekly Picks",
     "Week Backtest",
     "Season Backtest",
     "V3.1 Model Results",
-    "Pick History"])
+    "Pick History", "Model Audit"])
 
 MODEL_PATH = ROOT / "outputs" / "v31_production_model.json"
 
@@ -44,11 +44,13 @@ def _ml_probability(row, payload):
     coef = np.array(payload["coefficients"], dtype=float)
     intercept = float(payload["intercept"])
 
-    values = np.array([
-        0.0 if pd.isna(row.get(f, 0.0)) else float(row.get(f, 0.0))
-        for f in features
-    ], dtype=float)
+    missing = [f for f in features if f not in row.index or pd.isna(row[f])]
+    if missing:
+        raise ValueError(f"Missing ML model features: {missing}. Prediction withheld rather than treating missing data as zero.")
+    values = np.array([float(row[f]) for f in features], dtype=float)
 
+    if not (len(features) == len(mean) == len(scale) == len(coef)):
+        raise ValueError("Production model dimensions do not match feature list")
     safe_scale = np.where(scale == 0, 1.0, scale)
     z = (values - mean) / safe_scale
     logit = intercept + float(np.dot(coef, z))
@@ -159,6 +161,7 @@ with tabs[0]:
                 })
 
                 st.dataframe(display, width="stretch", hide_index=True)
+                st.download_button("Download weekly picks (CSV / Excel compatible)", df.to_csv(index=False).encode("utf-8"), file_name=f"ddd_picks_{int(season)}_week_{int(week):02d}.csv", mime="text/csv")
 
                 disagreements = df[df["agreement"].eq("NO")]
                 if len(disagreements):
@@ -185,7 +188,7 @@ with tabs[0]:
 with tabs[1]:
     st.subheader("Original V3 Week Backtest")
     c1, c2 = st.columns(2)
-    s = c1.number_input("Season", 2020, 2025, 2025, key="wbs")
+    s = c1.number_input("Season", 2020, 2035, 2026, key="wbs")
     w = c2.number_input("Week", 1, 18, 1, key="wbw")
     if st.button("Run Week Backtest"):
         try:
@@ -195,13 +198,14 @@ with tabs[1]:
             correct = int(d["correct"].sum()) if total else 0
             st.metric("Accuracy", f"{(100*correct/total if total else 0):.1f}%")
             st.dataframe(d, width="stretch", hide_index=True)
+            st.download_button("Download week backtest", d.to_csv(index=False), file_name=f"backtest_{int(s)}_week_{int(w):02d}.csv", mime="text/csv")
         except Exception as e:
             st.error("Week backtest failed")
             st.code(str(e))
 
 with tabs[2]:
     st.subheader("Original V3 Season Backtest")
-    s = st.number_input("Season", 2020, 2025, 2025, key="sbs")
+    s = st.number_input("Season", 2020, 2035, 2026, key="sbs")
     if st.button("Run Season Backtest"):
         try:
             d = backtest(int(s))
@@ -216,6 +220,7 @@ with tabs[2]:
             weekly["Wrong"] = weekly["Games"] - weekly["Correct"]
             weekly["Accuracy"] = (weekly["Accuracy"] * 100).round(1)
             st.dataframe(weekly, width="stretch", hide_index=True)
+            st.download_button("Download season backtest", d.to_csv(index=False), file_name=f"backtest_{int(s)}.csv", mime="text/csv")
         except Exception as e:
             st.error("Season backtest failed")
             st.code(str(e))
@@ -269,5 +274,44 @@ with tabs[3]:
             ] if c in holdout.columns
         ]
         st.dataframe(holdout[keep], width="stretch", hide_index=True)
-        with tabs[4]:
-            render_pick_history(ROOT)
+with tabs[4]:
+    render_pick_history(ROOT)
+
+with tabs[5]:
+    st.subheader("Model audit and historical comparison")
+    st.info("The installed ML model was trained on seasons through 2025. Its 2025 training data cannot be used as an independent 2025 test. Use walk-forward retraining for unbiased ML backtests.")
+    if MODEL_PATH.exists():
+        payload = json.loads(MODEL_PATH.read_text(encoding="utf-8"))
+        st.write("Production model:", payload.get("version", "Unknown"))
+        st.write("Training seasons:", payload.get("training_seasons", []))
+        st.write("Features:", payload.get("features", []))
+        zero_features = [f for f in payload.get("features", []) if f in {"edge_injuries", "edge_market", "edge_coaching"}]
+        if zero_features:
+            st.warning("Placeholder inputs in legacy engine: " + ", ".join(zero_features) + ". Do not interpret these as verified injury, market or coaching statistics.")
+    st.write("Current model limitations: no true offensive-line/pass-rush tracking inputs; turnovers are approximated from QB edge; score projection is heuristic; probabilities have not been independently recalibrated here.")
+
+
+# v4.0 Trench Audit: diagnostic only; does not claim player-level line grades.
+with st.expander("V4.0 — Offensive / Defensive Line Matchup Audit", expanded=False):
+    st.caption("Team-level proxies only. Historical inputs are restricted to weeks before the selected game. Missing values are shown as missing, not zero.")
+    try:
+        from nfl_picker_v3.engine import build_context
+        from nfl_picker_v3.trench_report import audit_matchup, matchup_edges
+        audit_season = st.number_input("Audit season", min_value=2020, max_value=2026, value=2026, key="trench_season")
+        audit_week = st.number_input("Audit week", min_value=1, max_value=18, value=6, key="trench_week")
+        if st.button("Load trench matchups", key="trench_load"):
+            sched, team_stats, qb_stats, _ = build_context([audit_season-2, audit_season-1, audit_season])
+            games = sched[(sched.season == audit_season) & (sched.week == audit_week)]
+            if games.empty:
+                st.warning("No scheduled games found for this week.")
+            else:
+                for _, game in games.iterrows():
+                    home, away = game.home_team, game.away_team
+                    with st.expander(f"{away} at {home}"):
+                        report = audit_matchup(team_stats, qb_stats, int(audit_season), int(audit_week), home, away)
+                        st.dataframe(report, use_container_width=True, hide_index=True)
+                        st.json(matchup_edges(team_stats, qb_stats, int(audit_season), int(audit_week), home, away))
+                        if not report["Available for both"].all():
+                            st.warning("Incomplete trench data. Avoid interpreting missing values as neutral performance.")
+    except Exception as exc:
+        st.error(f"Unable to load trench audit: {exc}")

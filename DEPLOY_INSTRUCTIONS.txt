@@ -1,0 +1,22 @@
+DDD NFL Picker v4.0 — changed files only
+
+IMPORTANT: Test on a branch before merging into main. This patch has passed Python syntax checks only; live runtime and accuracy are not validated.
+
+1. In GitHub repository, create a branch called v4-trench-test from main.
+2. Extract this ZIP locally.
+3. Upload each file to the same relative path in the test branch, preserving src/nfl_picker_v3/ paths.
+4. For existing files, replace their contents; for new files, add them.
+5. Test a separate Streamlit deployment pointing to v4-trench-test, if available.
+6. Check logs, run a scan, test all tabs and downloads.
+7. Merge into main only after checks pass. The original live app should redeploy from main.
+
+Changed files:
+UPGRADE_V4_ENGINE_NOTES.md
+UPGRADE_V4_README.md
+UPGRADE_V4_TRENCH_AUDIT.md
+app.py
+config.json
+src/nfl_picker_v3/features.py
+src/nfl_picker_v3/model.py
+src/nfl_picker_v3/precision_backtest.py
+src/nfl_picker_v3/trench_report.py
