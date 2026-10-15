@@ -41,15 +41,27 @@ def team_pbp_weekly(pbp):
     df["epa"] = pd.to_numeric(df["epa"], errors="coerce")
     df["success"] = (df["epa"] > 0).astype(float)
 
+    # Pregame-only historical metrics; aggregates are subsequently filtered by snap().
+    df["is_pass"] = df["play_type"].eq("pass")
+    df["is_run"] = df["play_type"].eq("run")
+    def num(name):
+        return pd.to_numeric(df[name], errors="coerce") if name in df else pd.Series(np.nan, index=df.index)
+    df["sack_flag"] = num("sack").where(df["is_pass"])
+    df["pressure_flag"] = num("qb_hit").where(df["is_pass"])
+    df["turnover_flag"] = (num("interception").fillna(0) + num("fumble_lost").fillna(0)).clip(0, 1)
+    df["pass_epa"] = df["epa"].where(df["is_pass"])
+    df["run_epa"] = df["epa"].where(df["is_run"])
+    df["pass_success"] = df["success"].where(df["is_pass"])
+    df["run_success"] = df["success"].where(df["is_run"])
     off = (
         df.groupby(["season","week","posteam"], as_index=False)
-        .agg(off_epa=("epa","mean"), off_success=("success","mean"))
+        .agg(off_epa=("epa","mean"), off_success=("success","mean"), pass_epa=("pass_epa","mean"), run_epa=("run_epa","mean"), pass_success=("pass_success","mean"), run_success=("run_success","mean"), sack_allowed_rate=("sack_flag","mean"), qb_hit_allowed_rate=("pressure_flag","mean"), turnover_rate=("turnover_flag","mean"))
         .rename(columns={"posteam":"team"})
     )
     de = (
         df.groupby(["season","week","defteam"], as_index=False)
         .agg(def_epa_allowed=("epa","mean"),
-             def_success_allowed=("success","mean"))
+             def_success_allowed=("success","mean"), pass_epa_allowed=("pass_epa","mean"), run_epa_allowed=("run_epa","mean"), pass_success_allowed=("pass_success","mean"), run_success_allowed=("run_success","mean"), sack_generated_rate=("sack_flag","mean"), qb_hit_generated_rate=("pressure_flag","mean"), turnover_forced_rate=("turnover_flag","mean"))
         .rename(columns={"defteam":"team"})
     )
     return off.merge(de, on=["season","week","team"], how="outer")
@@ -126,7 +138,7 @@ def snap(tw, qw, season, week, team, recent=4):
     cw, pw = (.35,.65) if week <= 3 else ((.70,.30) if week <= 8 else (.85,.15))
 
     out = {}
-    for m in ["off_epa","off_success","def_epa_allowed","def_success_allowed"]:
+    for m in ["off_epa","off_success","def_epa_allowed","def_success_allowed", "pass_epa", "run_epa", "pass_success", "run_success", "pass_epa_allowed", "run_epa_allowed", "pass_success_allowed", "run_success_allowed", "sack_allowed_rate", "sack_generated_rate", "qb_hit_allowed_rate", "qb_hit_generated_rate", "turnover_rate", "turnover_forced_rate"]:
         vals, ws = [], []
         a = cur[m].tail(recent).mean() if m in cur.columns else np.nan
         b = prev[m].tail(8).mean() if m in prev.columns else np.nan
